@@ -1,70 +1,101 @@
-name: "template"
-
+name: "aws-acm"
 # Canonical GitHub repo
-github_repo: "cloudposse-terraform-components/template"
-
+github_repo: "cloudposse-terraform-components/aws-acm"
 # Short description of this project
 description: |-
-  Description of this component
+  This component is responsible for requesting an ACM certificate for a domain and adding a CNAME record to the DNS zone
+  to complete certificate validation.
 
-usage: |-
-  **Stack Level**: Regional or Test47
+  The ACM component is to manage an unlimited number of certificates, predominantly for vanity domains. While the
+  [dns-primary](https://docs.cloudposse.com/components/library/aws/dns-primary) component has the ability to generate ACM
+  certificates, it is very opinionated and can only manage one zone. In reality, companies have many branded domains
+  associated with a load balancer, so we need to be able to generate more complicated certificates.
+
+  We have, as a convenience, the ability to create an ACM certificate as part of creating a DNS zone, whether primary or
+  delegated. That convenience is limited to creating `example.com` and `*.example.com` when creating a zone for
+  `example.com`. For example, Acme has delegated `acct.acme.com` and in addition to `*.acct.acme.com` needed an ACM
+  certificate for `*.usw2.acct.acme.com`, so we use the ACM component to provision that, rather than extend the DNS
+  primary or delegated components to take a list of additional certificates. Both are different views on the Single
+  Responsibility Principle.
+
+  ## Usage
+
+  **Stack Level**: Global or Regional
 
   Here's an example snippet for how to use this component.
-  
+
   ```yaml
   components:
     terraform:
-      foo:
+      acm:
+        settings:
+          spacelift:
+            workspace_enabled: true
         vars:
           enabled: true
+          domain_name: acme.com
+          process_domain_validation_options: false
+          validation_method: DNS
+          # NOTE: The following subject alternative name is automatically added by the module.
+          #       Additional entries can be added by providing this input.
+          # subject_alternative_names:
+          #   - "*.acme.com"
   ```
 
+  ACM using a private CA
+
+  ```yaml
+  components:
+    terraform:
+      acm:
+        settings:
+          spacelift:
+            workspace_enabled: true
+        vars:
+          enabled: true
+          domain_name: acme.com
+          process_domain_validation_options: false
+          dns_private_zone_enabled: true
+          certificate_authority_component_name: private-ca-subordinate
+          certificate_authority_stage_name: pca
+          certificate_authority_environment_name: use2
+          certificate_authority_component_key: subordinate
+  ```
+
+  <!-- prettier-ignore-start -->
+
+  <!-- prettier-ignore-end -->
+
+  ## References
+
+  - [cloudposse/terraform-aws-components](https://github.com/cloudposse/terraform-aws-components/tree/main/modules/acm) -
+    Cloud Posse's upstream component
 include:
   - "docs/terraform.md"
-
 tags:
-  - terraform
-  - terraform-modules
-  - aws
-  - components
-  - terraform-components
-  - root
-  - geodesic
-  - reference-implementation
-  - reference-architecture
-
+  - component/acm
+  - layer/network
+  - provider/aws
 # Categories of this project
 categories:
-  - terraform-modules/root
-  - terraform-components
-
+  - component/acm
+  - layer/network
+  - provider/aws
 # License of this project
 license: "APACHE2"
-
 # Badges to display
 badges:
-  - name: "Latest Release"
-    image: "https://img.shields.io/github/release/cloudposse-terraform-components/template.svg?style=for-the-badge"
-    url: "https://github.com/cloudposse-terraform-components/template/releases/latest"
-  - name: "Slack Community"
-    image: "https://slack.cloudposse.com/for-the-badge.svg"
-    url: "https://slack.cloudposse.com"
-
-references:
-  - name: "Cloud Posse Documentation"
-    description: "Complete documentation for the Cloud Posse solution"
-    url: "https://docs.cloudposse.com"
-  - name: "Reference Architectures"
-    description: "Launch effortlessly with our turnkey reference architectures, built either by your team or ours."
-    url: "https://cloudposse.com/"
-
+  - name: Latest Release
+    image: https://img.shields.io/github/release/cloudposse-terraform-components/aws-acm.svg?style=for-the-badge
+    url: https://github.com/cloudposse-terraform-components/aws-acm/releases/latest
+  - name: Slack Community
+    image: https://slack.cloudposse.com/for-the-badge.svg
+    url: https://slack.cloudposse.com
 related:
-- name: "Cloud Posse Terraform Modules"
-  description: Our collection of reusable Terraform modules used by our reference architectures.
-  url: "https://docs.cloudposse.com/modules/"
-- name: "Atmos"
-  description: "Atmos is like docker-compose but for your infrastructure"
-  url: "https://atmos.tools"
-
+  - name: "Cloud Posse Terraform Modules"
+    description: Our collection of reusable Terraform modules used by our reference architectures.
+    url: "https://docs.cloudposse.com/modules/"
+  - name: "Atmos"
+    description: "Atmos is like docker-compose but for your infrastructure"
+    url: "https://atmos.tools"
 contributors: [] # If included generates contribs
