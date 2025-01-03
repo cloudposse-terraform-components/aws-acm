@@ -5,7 +5,7 @@ components:
         component: acm
       vars: 
         enabled: true
-        domain_name_prefix: example
+        domain_name: example.net
         process_domain_validation_options: true
         validation_method: DNS
         # NOTE: The following subject alternative name is automatically added by the module.
