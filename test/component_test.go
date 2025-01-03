@@ -110,19 +110,22 @@ func TestComponent(t *testing.T) {
 			dnsDelegatedComponent := helper.NewAtmosComponent("dns-delegated", "default-test", map[string]interface{}{})
 
 			// Retrieve outputs from the delegated DNS component
-			domainName := atm.Output(dnsDelegatedComponent, "default_domain_name")
+			delegatedDomainName := atm.Output(dnsDelegatedComponent, "default_domain_name")
 			domainZoneId := atm.Output(dnsDelegatedComponent, "default_dns_zone_id")
 
 			// Inputs for the ACM component
 			inputs := map[string]interface{}{
 				"enabled":                           true,
-				"domain_name":                       domainName,
 				"process_domain_validation_options": true,
 				"validation_method":                 "DNS",
 			}
 
 			// Deploy the ACM component
 			component := helper.NewAtmosComponent("acm/basic", "default-test", inputs)
+
+			domainName := fmt.Sprintf("%s.%s", component.GetRandomIdentifier(), delegatedDomainName)
+			component.Vars["domain_name"] = domainName
+
 			defer atm.Destroy(component)
 			atm.Deploy(component)
 
