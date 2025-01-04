@@ -1,0 +1,14 @@
+components:
+  terraform:
+    acm/basic:
+      metadata:
+        component: acm
+      vars: 
+        enabled: true
+        domain_name: example.net
+        process_domain_validation_options: true
+        validation_method: DNS
+        # NOTE: The following subject alternative name is automatically added by the module.
+        #       Additional entries can be added by providing this input.
+        # subject_alternative_names:
+        #   - "*.example.net"
