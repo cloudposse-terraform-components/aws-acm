@@ -53,21 +53,12 @@ func TestComponent(t *testing.T) {
 	fixture.Suite("default", func(t *testing.T, suite *helper.Suite) {
 		// Setup phase: Create DNS zones for testing
 		suite.Setup(t, func(t *testing.T, atm *helper.Atmos) {
-			randomID := suite.GetRandomIdentifier()
-			domainName := fmt.Sprintf("example-%s.net", randomID)
-
-			// Deploy the primary DNS zone
-			inputs := map[string]interface{}{
-				"domain_names": []string{domainName},
-			}
-			atm.GetAndDeploy("dns-primary", "default-test", inputs)
-
 			// Deploy the delegated DNS zone
-			inputs = map[string]interface{}{
+			inputs := map[string]interface{}{
 				"zone_config": []map[string]interface{}{
 					{
-						"subdomain": randomID,
-						"zone_name": domainName,
+						"subdomain": suite.GetRandomIdentifier(),
+						"zone_name": "components.cptest.test-automation.app",
 					},
 				},
 			}
@@ -76,31 +67,15 @@ func TestComponent(t *testing.T) {
 
 		// Teardown phase: Destroy the DNS zones created during setup
 		suite.TearDown(t, func(t *testing.T, atm *helper.Atmos) {
-			dnsPrimaryComponent := helper.NewAtmosComponent("dns-primary", "default-test", map[string]interface{}{})
-
-			primaryZones := map[string]zone{}
-			atm.OutputStruct(dnsPrimaryComponent, "zones", &primaryZones)
-
-			primaryDomains := make([]string, 0, len(primaryZones))
-			for k := range primaryZones {
-				primaryDomains = append(primaryDomains, k)
-			}
-
-			primaryDomainName := primaryDomains[0]
-
-			randomID := suite.GetRandomIdentifier()
-
 			inputs := map[string]interface{}{
 				"zone_config": []map[string]interface{}{
 					{
-						"subdomain": randomID,
-						"zone_name": primaryDomainName,
+						"subdomain": suite.GetRandomIdentifier(),
+						"zone_name": "components.cptest.test-automation.app",
 					},
 				},
 			}
-
 			atm.GetAndDestroy("dns-delegated", "default-test", inputs)
-			atm.GetAndDestroy("dns-primary", "default-test", map[string]interface{}{})
 		})
 
 		// Test phase: Validate the functionality of the ACM component
@@ -167,6 +142,7 @@ func TestComponent(t *testing.T) {
 			require.NoError(t, err)
 
 			// Ensure the certificate type and ARN match expectations
+			assert.Equal(t, "ISSUED", *awsCertificate.Certificate.Status)
 			assert.Equal(t, "AMAZON_ISSUED", *awsCertificate.Certificate.Type)
 			assert.Equal(t, arn, *awsCertificate.Certificate.CertificateArn)
 		})
