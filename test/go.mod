@@ -3,7 +3,7 @@ module test
 go 1.23.0
 
 require (
-	github.com/cloudposse/test-helpers v0.15.1-0.20250207174002-438fa93bcb25
+	github.com/cloudposse/test-helpers v0.15.1-0.20250207205949-73491a56240b
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gruntwork-io/terratest v0.48.1
 	github.com/mattn/go-zglob v0.0.3 // indirect

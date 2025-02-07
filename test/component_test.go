@@ -111,12 +111,19 @@ func (s *ComponentSuite) TestBasic() {
 	assert.Equal(s.T(), string(types.CertificateStatusIssued), string(awsCertificate.Certificate.Status))
 	assert.Equal(s.T(), string(types.CertificateTypeAmazonIssued), string(awsCertificate.Certificate.Type))
 	assert.Equal(s.T(), arn, *awsCertificate.Certificate.CertificateArn)
+}
 
+func (s *ComponentSuite) TestEnabledFlag() {
+	s.T().Skip("Skipping disabled ACM test")
+	const component = "acm/disabled"
+	const stack = "default-test"
+	s.VerifyEnabledFlag(component, stack, nil)
 }
 
 func TestRunSuite(t *testing.T) {
-	subdomain := strings.ToLower(random.UniqueId())
 	suite := new(ComponentSuite)
+
+	subdomain := strings.ToLower(random.UniqueId())
 	inputs := map[string]interface{}{
 		"zone_config": []map[string]interface{}{
 			{
