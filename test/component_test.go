@@ -1,14 +1,17 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/acm"
+	"github.com/aws/aws-sdk-go-v2/service/acm"
+	"github.com/aws/aws-sdk-go-v2/service/acm/types"
 	"github.com/cloudposse/test-helpers/pkg/atmos"
-	helper "github.com/cloudposse/test-helpers/pkg/atmos/aws-component-helper"
+	helper "github.com/cloudposse/test-helpers/pkg/atmos/component-helper"
 	"github.com/gruntwork-io/terratest/modules/aws"
+	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,113 +41,90 @@ type zone struct {
 	ZoneID string `json:"zone_id"`
 }
 
-func TestComponent(t *testing.T) {
-	// Define the AWS region to use for the tests
-	awsRegion := "us-east-2"
+type ComponentSuite struct {
+	helper.TestSuite
+}
 
-	// Initialize the test fixture
-	fixture := helper.NewFixture(t, "../", awsRegion, "test/fixtures")
+func (s *ComponentSuite) TestBasic() {
+	const component = "acm/basic"
+	const stack = "default-test"
+	const awsRegion = "us-east-2"
 
-	// Ensure teardown is executed after the test
-	defer fixture.TearDown()
-	fixture.SetUp(&atmos.Options{})
+	// Reference the delegated DNS component
+	dnsDelegatedOptions := s.GetAtmosOptions("dns-delegated", "default-test", nil)
 
-	// Define the test suite
-	fixture.Suite("default", func(t *testing.T, suite *helper.Suite) {
-		// Setup phase: Create DNS zones for testing
-		suite.Setup(t, func(t *testing.T, atm *helper.Atmos) {
-			// Deploy the delegated DNS zone
-			inputs := map[string]interface{}{
-				"zone_config": []map[string]interface{}{
-					{
-						"subdomain": suite.GetRandomIdentifier(),
-						"zone_name": "components.cptest.test-automation.app",
-					},
-				},
-			}
-			atm.GetAndDeploy("dns-delegated", "default-test", inputs)
-		})
+	// Retrieve outputs from the delegated DNS component
+	delegatedDomainName := atmos.Output(s.T(), dnsDelegatedOptions, "default_domain_name")
+	domainZoneId := atmos.Output(s.T(), dnsDelegatedOptions, "default_dns_zone_id")
 
-		// Teardown phase: Destroy the DNS zones created during setup
-		suite.TearDown(t, func(t *testing.T, atm *helper.Atmos) {
-			inputs := map[string]interface{}{
-				"zone_config": []map[string]interface{}{
-					{
-						"subdomain": suite.GetRandomIdentifier(),
-						"zone_name": "components.cptest.test-automation.app",
-					},
-				},
-			}
-			atm.GetAndDestroy("dns-delegated", "default-test", inputs)
-		})
+	domainName := fmt.Sprintf("%s.%s", s.Config.RandomIdentifier, delegatedDomainName)
 
-		// Test phase: Validate the functionality of the ACM component
-		suite.Test(t, "basic", func(t *testing.T, atm *helper.Atmos) {
+	// Inputs for the ACM component
+	inputs := map[string]interface{}{
+		"enabled":                           true,
+		"process_domain_validation_options": true,
+		"validation_method":                 "DNS",
+		"domain_name":                       domainName,
+	}
 
-			// Reference the delegated DNS component
-			dnsDelegatedComponent := helper.NewAtmosComponent("dns-delegated", "default-test", map[string]interface{}{})
+	defer s.DestroyAtmosComponent(s.T(), component, stack, &inputs)
+	options, _ := s.DeployAtmosComponent(s.T(), component, stack, &inputs)
 
-			// Retrieve outputs from the delegated DNS component
-			delegatedDomainName := atm.Output(dnsDelegatedComponent, "default_domain_name")
-			domainZoneId := atm.Output(dnsDelegatedComponent, "default_dns_zone_id")
+	// Validate the ACM outputs
+	id := atmos.Output(s.T(), options, "id")
+	assert.NotEmpty(s.T(), id)
 
-			// Inputs for the ACM component
-			inputs := map[string]interface{}{
-				"enabled":                           true,
-				"process_domain_validation_options": true,
-				"validation_method":                 "DNS",
-			}
+	arn := atmos.Output(s.T(), options, "arn")
+	assert.NotEmpty(s.T(), arn)
 
-			// Deploy the ACM component
-			component := helper.NewAtmosComponent("acm/basic", "default-test", inputs)
+	domainNameOuput := atmos.Output(s.T(), options, "domain_name")
+	assert.Equal(s.T(), domainName, domainNameOuput)
 
-			domainName := fmt.Sprintf("%s.%s", component.GetRandomIdentifier(), delegatedDomainName)
-			component.Vars["domain_name"] = domainName
+	// Verify that the ACM certificate ARN is stored in SSM
+	ssmPath := fmt.Sprintf("/acm/%s", domainName)
+	acmArnSssmStored := aws.GetParameter(s.T(), awsRegion, ssmPath)
+	assert.Equal(s.T(), arn, acmArnSssmStored)
 
-			defer atm.Destroy(component)
-			atm.Deploy(component)
+	// Validate domain validation options
+	validationOptions := [][]validationOption{}
+	atmos.OutputStruct(s.T(), options, "domain_validation_options", &validationOptions)
+	for _, validationOption := range validationOptions[0] {
+		if validationOption.DomainName != domainName {
+			continue
+		}
+		assert.Equal(s.T(), domainName, validationOption.DomainName)
 
-			// Validate the ACM outputs
-			id := atm.Output(component, "id")
-			assert.NotEmpty(t, id)
+		// Verify DNS validation records
+		resourceRecordName := strings.TrimSuffix(validationOption.ResourceRecordName, ".")
+		validationDNSRecord := aws.GetRoute53Record(s.T(), domainZoneId, resourceRecordName, validationOption.ResourceRecordType, awsRegion)
+		assert.Equal(s.T(), validationOption.ResourceRecordValue, *validationDNSRecord.ResourceRecords[0].Value)
+	}
 
-			arn := atm.Output(component, "arn")
-			assert.NotEmpty(t, arn)
-
-			domainNameOuput := atm.Output(component, "domain_name")
-			assert.Equal(t, domainName, domainNameOuput)
-
-			// Verify that the ACM certificate ARN is stored in SSM
-			ssmPath := fmt.Sprintf("/acm/%s", domainName)
-			acmArnSssmStored := aws.GetParameter(t, awsRegion, ssmPath)
-			assert.Equal(t, arn, acmArnSssmStored)
-
-			// Validate domain validation options
-			validationOptions := [][]validationOption{}
-			atm.OutputStruct(component, "domain_validation_options", &validationOptions)
-			for _, validationOption := range validationOptions[0] {
-				if validationOption.DomainName != domainName {
-					continue
-				}
-				assert.Equal(t, domainName, validationOption.DomainName)
-
-				// Verify DNS validation records
-				resourceRecordName := strings.TrimSuffix(validationOption.ResourceRecordName, ".")
-				validationDNSRecord := aws.GetRoute53Record(t, domainZoneId, resourceRecordName, validationOption.ResourceRecordType, awsRegion)
-				assert.Equal(t, validationOption.ResourceRecordValue, *validationDNSRecord.ResourceRecords[0].Value)
-			}
-
-			// Validate the ACM certificate in AWS
-			client := aws.NewAcmClient(t, awsRegion)
-			awsCertificate, err := client.DescribeCertificate(&acm.DescribeCertificateInput{
-				CertificateArn: &arn,
-			})
-			require.NoError(t, err)
-
-			// Ensure the certificate type and ARN match expectations
-			assert.Equal(t, "ISSUED", *awsCertificate.Certificate.Status)
-			assert.Equal(t, "AMAZON_ISSUED", *awsCertificate.Certificate.Type)
-			assert.Equal(t, arn, *awsCertificate.Certificate.CertificateArn)
-		})
+	// Validate the ACM certificate in AWS
+	client := aws.NewAcmClient(s.T(), awsRegion)
+	awsCertificate, err := client.DescribeCertificate(context.Background(), &acm.DescribeCertificateInput{
+		CertificateArn: &arn,
 	})
+	require.NoError(s.T(), err)
+
+	// Ensure the certificate type and ARN match expectations
+	assert.Equal(s.T(), string(types.CertificateStatusIssued), string(awsCertificate.Certificate.Status))
+	assert.Equal(s.T(), string(types.CertificateTypeAmazonIssued), string(awsCertificate.Certificate.Type))
+	assert.Equal(s.T(), arn, *awsCertificate.Certificate.CertificateArn)
+
+}
+
+func TestRunSuite(t *testing.T) {
+	subdomain := strings.ToLower(random.UniqueId())
+	suite := new(ComponentSuite)
+	inputs := map[string]interface{}{
+		"zone_config": []map[string]interface{}{
+			{
+				"subdomain": subdomain,
+				"zone_name": "components.cptest.test-automation.app",
+			},
+		},
+	}
+	suite.AddDependency(t, "dns-delegated", "default-test", &inputs)
+	helper.Run(t, suite)
 }

@@ -41,13 +41,3 @@ spec:
         - "**/modules/**"
       excluded_paths: []
 
-    - component: "acm"
-      source: "../../src"
-      targets:
-        - "components/terraform/acm"
-      included_paths:
-        - "**/*.tf"
-        - "**/*.md"
-        - "**/*.tftmpl"
-        - "**/modules/**"
-      excluded_paths: []
