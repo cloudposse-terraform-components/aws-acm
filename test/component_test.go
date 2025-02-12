@@ -23,24 +23,6 @@ type validationOption struct {
 	ResourceRecordValue string `json:"resource_record_value"`
 }
 
-type zone struct {
-	Arn               string            `json:"arn"`
-	Comment           string            `json:"comment"`
-	DelegationSetId   string            `json:"delegation_set_id"`
-	ForceDestroy      bool              `json:"force_destroy"`
-	Id                string            `json:"id"`
-	Name              string            `json:"name"`
-	NameServers       []string          `json:"name_servers"`
-	PrimaryNameServer string            `json:"primary_name_server"`
-	Tags              map[string]string `json:"tags"`
-	TagsAll           map[string]string `json:"tags_all"`
-	Vpc               []struct {
-		ID     string `json:"vpc_id"`
-		Region string `json:"vpc_region"`
-	} `json:"vpc"`
-	ZoneID string `json:"zone_id"`
-}
-
 type ComponentSuite struct {
 	helper.TestSuite
 }
