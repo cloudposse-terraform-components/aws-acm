@@ -111,10 +111,11 @@ func (s *ComponentSuite) TestBasic() {
 	assert.Equal(s.T(), string(types.CertificateStatusIssued), string(awsCertificate.Certificate.Status))
 	assert.Equal(s.T(), string(types.CertificateTypeAmazonIssued), string(awsCertificate.Certificate.Type))
 	assert.Equal(s.T(), arn, *awsCertificate.Certificate.CertificateArn)
+
+	s.DriftTest(component, stack, &inputs)
 }
 
 func (s *ComponentSuite) TestEnabledFlag() {
-	s.T().Skip("Skipping disabled ACM test")
 	const component = "acm/disabled"
 	const stack = "default-test"
 	s.VerifyEnabledFlag(component, stack, nil)
