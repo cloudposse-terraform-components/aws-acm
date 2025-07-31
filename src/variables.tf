@@ -101,3 +101,9 @@ variable "dns_delegated_component_name" {
   default     = "dns-delegated"
   description = "Use this component name to read from the remote state to get the dns_delegated zone ID"
 }
+
+variable "certificate_export" {
+  type        = bool
+  default     = false
+  description = "Specifies whether the certificate can be exported"
+}
