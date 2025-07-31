@@ -25,9 +25,10 @@ module "acm" {
   version = "0.18.0"
 
   certificate_authority_arn         = local.private_ca_enabled ? module.private_ca[0].outputs.private_ca[var.certificate_authority_component_key].certificate_authority.arn : null
-  validation_method                 = local.private_ca_enabled ? null : var.validation_method
+  validation_method                 = local.private_ca_enabled ? null : var.validation_method  
   domain_name                       = local.domain_name
   process_domain_validation_options = var.process_domain_validation_options
+  certificate_export                = var.certificate_export
   ttl                               = 300
   subject_alternative_names         = local.all_sans
   zone_id                           = join("", data.aws_route53_zone.default[*].zone_id)
