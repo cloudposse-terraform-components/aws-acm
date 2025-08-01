@@ -69,22 +69,22 @@ description: |-
   | Name | Version |
   |------|---------|
   | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.0 |
-  | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.9.0 |
+  | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.9.0, < 6.0.0 |
 
   ## Providers
 
   | Name | Version |
   |------|---------|
-  | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.9.0 |
+  | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.9.0, < 6.0.0 |
 
   ## Modules
 
   | Name | Source | Version |
   |------|--------|---------|
-  | <a name="module_acm"></a> [acm](#module\_acm) | cloudposse/acm-request-certificate/aws | 0.16.3 |
-  | <a name="module_dns_delegated"></a> [dns\_delegated](#module\_dns\_delegated) | cloudposse/stack-config/yaml//modules/remote-state | 1.5.0 |
+  | <a name="module_acm"></a> [acm](#module\_acm) | cloudposse/acm-request-certificate/aws | 0.18.1 |
+  | <a name="module_dns_delegated"></a> [dns\_delegated](#module\_dns\_delegated) | cloudposse/stack-config/yaml//modules/remote-state | 1.8.0 |
   | <a name="module_iam_roles"></a> [iam\_roles](#module\_iam\_roles) | ../account-map/modules/iam-roles | n/a |
-  | <a name="module_private_ca"></a> [private\_ca](#module\_private\_ca) | cloudposse/stack-config/yaml//modules/remote-state | 1.5.0 |
+  | <a name="module_private_ca"></a> [private\_ca](#module\_private\_ca) | cloudposse/stack-config/yaml//modules/remote-state | 1.8.0 |
   | <a name="module_this"></a> [this](#module\_this) | cloudposse/label/null | 0.25.0 |
 
   ## Resources
@@ -104,6 +104,7 @@ description: |-
   | <a name="input_certificate_authority_component_name"></a> [certificate\_authority\_component\_name](#input\_certificate\_authority\_component\_name) | Use this component name to read from the remote state to get the certificate\_authority\_arn if using an authority type of SUBORDINATE | `string` | `null` | no |
   | <a name="input_certificate_authority_enabled"></a> [certificate\_authority\_enabled](#input\_certificate\_authority\_enabled) | Whether to use the certificate authority or not | `bool` | `false` | no |
   | <a name="input_certificate_authority_environment_name"></a> [certificate\_authority\_environment\_name](#input\_certificate\_authority\_environment\_name) | Use this environment name to read from the remote state to get the certificate\_authority\_arn if using an authority type of SUBORDINATE | `string` | `null` | no |
+  | <a name="input_certificate_export"></a> [certificate\_export](#input\_certificate\_export) | Whether to request an exportable public certificate or not | `bool` | `false` | no |
   | <a name="input_certificate_authority_stage_name"></a> [certificate\_authority\_stage\_name](#input\_certificate\_authority\_stage\_name) | Use this stage name to read from the remote state to get the certificate\_authority\_arn if using an authority type of SUBORDINATE | `string` | `null` | no |
   | <a name="input_context"></a> [context](#input\_context) | Single object for setting entire context at once.<br>See description of individual variables for details.<br>Leave string and numeric variables as `null` to use default value.<br>Individual variable settings (non-null) override settings in context object,<br>except for attributes, tags, and additional\_tag\_map, which are merged. | `any` | <pre>{<br>  "additional_tag_map": {},<br>  "attributes": [],<br>  "delimiter": null,<br>  "descriptor_formats": {},<br>  "enabled": true,<br>  "environment": null,<br>  "id_length_limit": null,<br>  "label_key_case": null,<br>  "label_order": [],<br>  "label_value_case": null,<br>  "labels_as_tags": [<br>    "unset"<br>  ],<br>  "name": null,<br>  "namespace": null,<br>  "regex_replace_chars": null,<br>  "stage": null,<br>  "tags": {},<br>  "tenant": null<br>}</pre> | no |
   | <a name="input_delimiter"></a> [delimiter](#input\_delimiter) | Delimiter to be used between ID elements.<br>Defaults to `-` (hyphen). Set to `""` to use no delimiter at all. | `string` | `null` | no |
