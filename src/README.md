@@ -21,7 +21,6 @@ delegated. That convenience is limited to creating `example.com` and `*.example.
 certificate for `*.usw2.acct.acme.com`, so we use the ACM component to provision that, rather than extend the DNS
 primary or delegated components to take a list of additional certificates. Both are different views on the Single
 Responsibility Principle.
-
 ## Usage
 
 **Stack Level**: Global or Regional
@@ -67,7 +66,10 @@ components:
 ```
 
 <!-- prettier-ignore-start -->
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- prettier-ignore-end -->
+
+
+<!-- markdownlint-disable -->
 ## Requirements
 
 | Name | Version |
@@ -147,12 +149,17 @@ components:
 | <a name="output_domain_name"></a> [domain\_name](#output\_domain\_name) | Certificate domain name |
 | <a name="output_domain_validation_options"></a> [domain\_validation\_options](#output\_domain\_validation\_options) | CNAME records that are added to the DNS zone to complete certificate validation |
 | <a name="output_id"></a> [id](#output\_id) | The ID of the certificate |
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
-<!-- prettier-ignore-end -->
+<!-- markdownlint-restore -->
+
+
 
 ## References
 
-- [cloudposse/terraform-aws-components](https://github.com/cloudposse/terraform-aws-components/tree/main/modules/acm) -
-  Cloud Posse's upstream component
+
+- [cloudposse-terraform-components](https://github.com/orgs/cloudposse-terraform-components/repositories) - Cloud Posse's upstream component
+
+
+
 
 [<img src="https://cloudposse.com/logo-300x69.svg" height="32" align="right"/>](https://cpco.io/homepage?utm_source=github&utm_medium=readme&utm_campaign=cloudposse-terraform-components/aws-acm&utm_content=)
+
