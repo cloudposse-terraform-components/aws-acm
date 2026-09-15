@@ -6,7 +6,10 @@ locals {
   domain_name = length(var.domain_name) > 0 ? var.domain_name : format("%s.%s", var.domain_name_prefix, local.domain_suffix)
 
   subject_alternative_names = concat(var.subject_alternative_names, formatlist("%s.${local.domain_suffix}", var.subject_alternative_names_prefixes))
-  all_sans                  = distinct(concat([format("*.%s", local.domain_name)], local.subject_alternative_names))
+  # A domain_name that is already a wildcard cannot take another wildcard label. Prepending
+  # unconditionally yields "*.*.example.com", which is not a valid SAN and which ACM rejects.
+  auto_wildcard_san = startswith(local.domain_name, "*.") ? [] : [format("*.%s", local.domain_name)]
+  all_sans          = distinct(concat(local.auto_wildcard_san, local.subject_alternative_names))
 
   private_enabled = local.enabled && var.dns_private_zone_enabled
 
@@ -39,7 +42,10 @@ module "acm" {
 resource "aws_ssm_parameter" "acm_arn" {
   count = local.enabled ? 1 : 0
 
-  name        = "/acm/${local.domain_name}"
+  # SSM parameter names do not accept "*", so a wildcard domain_name makes this resource fail.
+  # Substituting "star" keeps the name valid and avoids a collision with a certificate issued
+  # for the apex of the same domain.
+  name        = "/acm/${replace(local.domain_name, "*", "star")}"
   value       = module.acm.arn
   description = format("ACM certificate ARN for '%s' domain", local.domain_name)
   type        = "String"
