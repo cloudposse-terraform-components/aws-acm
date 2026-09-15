@@ -39,7 +39,11 @@ module "acm" {
 resource "aws_ssm_parameter" "acm_arn" {
   count = local.enabled ? 1 : 0
 
-  name        = "/acm/${local.domain_name}"
+  # var.ssm_parameter_name allows one account to hold more than one certificate for the same
+  # domain_name, for example a wildcard-plus-apex certificate on a load balancer alongside a
+  # wildcard-only certificate on CloudFront. Both would otherwise compute the same parameter
+  # name and, with overwrite enabled, clobber each other on every apply.
+  name        = length(var.ssm_parameter_name) > 0 ? var.ssm_parameter_name : "/acm/${local.domain_name}"
   value       = module.acm.arn
   description = format("ACM certificate ARN for '%s' domain", local.domain_name)
   type        = "String"
