@@ -43,9 +43,10 @@ resource "aws_ssm_parameter" "acm_arn" {
   count = local.enabled ? 1 : 0
 
   # SSM parameter names do not accept "*", so a wildcard domain_name makes this resource fail.
-  # Substituting "star" keeps the name valid and avoids a collision with a certificate issued
-  # for the apex of the same domain.
-  name        = "/acm/${replace(local.domain_name, "*", "star")}"
+  # Wildcards get their own "/acm/wildcard/" prefix. That keeps the name valid and cannot
+  # collide with the name generated for any literal domain, since a domain name cannot contain
+  # "/". Non-wildcard domain names keep the name they have today.
+  name        = startswith(local.domain_name, "*.") ? "/acm/wildcard/${trimprefix(local.domain_name, "*.")}" : "/acm/${local.domain_name}"
   value       = module.acm.arn
   description = format("ACM certificate ARN for '%s' domain", local.domain_name)
   type        = "String"
