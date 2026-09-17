@@ -107,3 +107,17 @@ variable "certificate_export" {
   default     = false
   description = "Specifies whether the certificate can be exported"
 }
+
+variable "ssm_parameter_name" {
+  type = string
+  # nullable = false so an explicitly supplied null falls back to the default rather than
+  # reaching length() and failing during plan evaluation.
+  nullable    = false
+  default     = ""
+  description = <<-EOT
+    Name of the SSM parameter that stores the certificate ARN.
+    Defaults to `""`, which keeps the computed `/acm/<domain_name>` name. Set this when a single
+    account holds more than one certificate for the same `domain_name`, since the computed names
+    would otherwise collide.
+    EOT
+}
