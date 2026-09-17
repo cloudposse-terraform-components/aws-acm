@@ -6,7 +6,16 @@ locals {
   domain_name = length(var.domain_name) > 0 ? var.domain_name : format("%s.%s", var.domain_name_prefix, local.domain_suffix)
 
   subject_alternative_names = concat(var.subject_alternative_names, formatlist("%s.${local.domain_suffix}", var.subject_alternative_names_prefixes))
-  all_sans                  = distinct(concat([format("*.%s", local.domain_name)], local.subject_alternative_names))
+  # A domain_name that is already a wildcard cannot take another wildcard label. Prepending
+  # unconditionally yields "*.*.example.com", which is not a valid SAN and which ACM rejects.
+  auto_wildcard_san = startswith(local.domain_name, "*.") ? [] : [format("*.%s", local.domain_name)]
+  all_sans          = distinct(concat(local.auto_wildcard_san, local.subject_alternative_names))
+
+  # SSM parameter names do not accept "*", so a wildcard domain_name makes the parameter fail.
+  # Wildcards get their own "/acm/wildcard/" prefix. That keeps the name valid and cannot
+  # collide with the name generated for any literal domain, since a domain name cannot contain
+  # "/". Non-wildcard domain names keep the name they have today.
+  default_ssm_parameter_name = startswith(local.domain_name, "*.") ? "/acm/wildcard/${trimprefix(local.domain_name, "*.")}" : "/acm/${local.domain_name}"
 
   private_enabled = local.enabled && var.dns_private_zone_enabled
 
@@ -42,8 +51,9 @@ resource "aws_ssm_parameter" "acm_arn" {
   # var.ssm_parameter_name allows one account to hold more than one certificate for the same
   # domain_name, for example a wildcard-plus-apex certificate on a load balancer alongside a
   # wildcard-only certificate on CloudFront. Both would otherwise compute the same parameter
-  # name and, with overwrite enabled, clobber each other on every apply.
-  name        = length(var.ssm_parameter_name) > 0 ? var.ssm_parameter_name : "/acm/${local.domain_name}"
+  # name and, with overwrite enabled, clobber each other on every apply. Empty keeps the
+  # computed name.
+  name        = length(var.ssm_parameter_name) > 0 ? var.ssm_parameter_name : local.default_ssm_parameter_name
   value       = module.acm.arn
   description = format("ACM certificate ARN for '%s' domain", local.domain_name)
   type        = "String"
