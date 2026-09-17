@@ -109,7 +109,10 @@ variable "certificate_export" {
 }
 
 variable "ssm_parameter_name" {
-  type        = string
+  type = string
+  # nullable = false so an explicitly supplied null falls back to the default rather than
+  # reaching length() and failing during plan evaluation.
+  nullable    = false
   default     = ""
   description = <<-EOT
     Name of the SSM parameter that stores the certificate ARN.
